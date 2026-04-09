@@ -6,7 +6,7 @@ import { EventCategory } from '@/lib/events-data';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Globe as GlobeIcon, Cloud, Users, Newspaper, Filter } from 'lucide-react';
+import { Globe as GlobeIcon, Cloud, Users, Newspaper, Filter, Landmark, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface SidebarProps {
@@ -24,6 +24,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const categories: { id: EventCategory; label: string; icon: React.ReactNode; color: string }[] = [
     { id: 'news', label: 'News', icon: <Newspaper className="w-4 h-4" />, color: 'bg-[#3679DC]' },
+    { id: 'politics', label: 'Politics', icon: <Landmark className="w-4 h-4" />, color: 'bg-red-500' },
+    { id: 'trends', label: 'Trends', icon: <TrendingUp className="w-4 h-4" />, color: 'bg-pink-500' },
     { id: 'weather', label: 'Weather', icon: <Cloud className="w-4 h-4" />, color: 'bg-[#47E1E5]' },
     { id: 'social', label: 'Social', icon: <Users className="w-4 h-4" />, color: 'bg-green-500' },
   ];

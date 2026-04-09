@@ -39,7 +39,7 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     controls.rotateSpeed = 0.5;
     controls.minDistance = 7;
     controls.maxDistance = 25;
-    controls.enablePan = false; // Keep globe centered
+    controls.enablePan = false; 
     controlsRef.current = controls;
 
     // Texture Loader
@@ -137,6 +137,8 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
       let color = 0x47E1E5; // cyan/weather
       if (event.category === 'news') color = 0x3679DC; // blue
       if (event.category === 'social') color = 0x22c55e; // green
+      if (event.category === 'politics') color = 0xef4444; // red
+      if (event.category === 'trends') color = 0xec4899; // pink
 
       const hotspotMat = new THREE.MeshPhongMaterial({
         color: color,
@@ -170,7 +172,6 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     };
 
     const onMouseUp = (e: MouseEvent) => {
-      // Only trigger click if the mouse was pressed for a short time (prevent clicks during drags)
       if (Date.now() - mouseDownTime > 250) return;
 
       mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -180,7 +181,6 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
       const intersects = raycaster.intersectObjects(globeGroup.children, true);
 
       for (const intersect of intersects) {
-        // Find the hotspot (it might be a child of the intersected object or the object itself)
         let obj = intersect.object;
         while (obj && !obj.userData.event && obj.parent) {
           obj = obj.parent;
@@ -196,7 +196,6 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     window.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mouseup', onMouseUp);
 
-    // Resize handling
     const onResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -204,17 +203,13 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     };
     window.addEventListener('resize', onResize);
 
-    // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
       
       controls.update();
-      
-      // Subtle cloud drift
       clouds.rotation.y += 0.0002;
       clouds.rotation.x += 0.0001;
 
-      // Pulse effect for hotspots
       const time = Date.now() * 0.003;
       Object.values(hotspotsRef.current).forEach((hotspot) => {
         const scale = 1 + Math.sin(time) * 0.15;
@@ -233,7 +228,6 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     };
   }, [events]);
 
-  // Update hotspot visuals when hovered/selected
   useEffect(() => {
     Object.entries(hotspotsRef.current).forEach(([id, mesh]) => {
       if (id === hoveredEventId) {

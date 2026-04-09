@@ -35,6 +35,8 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event, onClose }) => {
   const getCategoryColor = (cat: string) => {
     switch (cat) {
       case 'news': return 'text-[#3679DC] border-[#3679DC] bg-[#3679DC]/10';
+      case 'politics': return 'text-red-500 border-red-500 bg-red-500/10';
+      case 'trends': return 'text-pink-500 border-pink-500 bg-pink-500/10';
       case 'weather': return 'text-[#47E1E5] border-[#47E1E5] bg-[#47E1E5]/10';
       case 'social': return 'text-green-500 border-green-500 bg-green-500/10';
       default: return 'text-white border-white bg-white/10';
@@ -75,7 +77,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event, onClose }) => {
         </div>
 
         <div className="flex flex-col gap-4 text-sm text-muted-foreground border-y border-white/5 py-4">
-          <div className="flex items-center gap-3">
+          <div className="items-center gap-3 hidden md:flex">
             <MapPin className="w-4 h-4 text-accent" />
             <span>Coordinates: {event.lat.toFixed(4)}, {event.lon.toFixed(4)}</span>
           </div>

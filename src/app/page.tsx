@@ -10,7 +10,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Layers, Activity, Search } from 'lucide-react';
 
 export default function Home() {
-  const [activeCategories, setActiveCategories] = useState<EventCategory[]>(['news', 'weather', 'social']);
+  const [activeCategories, setActiveCategories] = useState<EventCategory[]>(['news', 'weather', 'social', 'politics', 'trends']);
   const [timelineValue, setTimelineValue] = useState(2);
   const [selectedEvent, setSelectedEvent] = useState<TerraEvent | null>(null);
 
