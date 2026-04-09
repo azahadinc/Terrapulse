@@ -11,12 +11,23 @@ import { Layers, Activity, Search } from 'lucide-react';
 
 export default function Home() {
   const [activeCategories, setActiveCategories] = useState<EventCategory[]>(['news', 'weather', 'social', 'politics', 'trends']);
-  const [timelineValue, setTimelineValue] = useState(2);
+  const [timelineValue, setTimelineValue] = useState(5); // Default to latest
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<TerraEvent | null>(null);
 
   const filteredEvents = useMemo(() => {
-    return MOCK_EVENTS.filter(event => activeCategories.includes(event.category));
-  }, [activeCategories]);
+    const currentDate = new Date(2024, 2, 18 + timelineValue);
+    return MOCK_EVENTS.filter(event => {
+      const isCategoryMatch = activeCategories.includes(event.category);
+      const isSearchMatch = 
+        event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        event.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const eventDate = new Date(event.timestamp);
+      const isTimelineMatch = eventDate <= currentDate;
+      
+      return isCategoryMatch && isSearchMatch && isTimelineMatch;
+    });
+  }, [activeCategories, searchTerm, timelineValue]);
 
   const handleToggleCategory = (category: EventCategory) => {
     setActiveCategories(prev => 
@@ -59,6 +70,8 @@ export default function Home() {
           <input 
             type="text" 
             placeholder="Search globe for events..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-transparent border-none outline-none text-sm w-64 placeholder:text-muted-foreground"
           />
         </div>
@@ -90,6 +103,7 @@ export default function Home() {
         <div className="flex flex-col gap-1">
           <p>ENGINE: TERRA-CORE-V2</p>
           <p>LATENCY: 14MS</p>
+          <p>SYNCED NODES: {filteredEvents.length}</p>
           <p>STATUS: SYNCED</p>
         </div>
       </div>

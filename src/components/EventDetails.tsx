@@ -1,13 +1,14 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TerraEvent } from '@/lib/events-data';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Sparkles, MapPin, Clock, ArrowUpRight, Loader2 } from 'lucide-react';
+import { X, Sparkles, MapPin, Clock, ArrowUpRight, Loader2, Info } from 'lucide-react';
 import { summarizeEvent } from '@/ai/flows/ai-event-summarizer';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 interface EventDetailsProps {
   event: TerraEvent | null;
@@ -17,6 +18,11 @@ interface EventDetailsProps {
 const EventDetails: React.FC<EventDetailsProps> = ({ event, onClose }) => {
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setSummary(null);
+  }, [event?.id]);
 
   if (!event) return null;
 
@@ -27,9 +33,21 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event, onClose }) => {
       setSummary(res.summary);
     } catch (error) {
       console.error("AI Error:", error);
+      toast({
+        title: "Synthesis Error",
+        description: "Unable to reach the AI core. Please check your connection.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewSource = () => {
+    toast({
+      title: "Opening Source Feed",
+      description: `Connecting to ${event.category} satellite data stream for event ID: ${event.id}`,
+    });
   };
 
   const getCategoryColor = (cat: string) => {
@@ -51,6 +69,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event, onClose }) => {
           src={`https://picsum.photos/seed/${event.id}/800/600`} 
           alt={event.title}
           className="w-full h-full object-cover opacity-60 transition-transform duration-700 hover:scale-110"
+          data-ai-hint="event photo"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         <Button
@@ -98,7 +117,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event, onClose }) => {
                 <Sparkles className="w-4 h-4 text-accent" />
                 <span className="text-xs font-bold uppercase tracking-wider text-accent">AI Summary</span>
               </div>
-              <p className="text-sm text-accent-foreground font-medium leading-relaxed italic">
+              <p className="text-sm text-white font-medium leading-relaxed italic">
                 "{summary}"
               </p>
             </div>
@@ -117,7 +136,11 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event, onClose }) => {
             </Button>
           )}
 
-          <Button variant="outline" className="w-full border-white/10 hover:bg-white/5 text-white h-12 rounded-xl">
+          <Button 
+            variant="outline" 
+            onClick={handleViewSource}
+            className="w-full border-white/10 hover:bg-white/5 text-white h-12 rounded-xl"
+          >
             View Source Data
             <ArrowUpRight className="w-4 h-4 ml-2" />
           </Button>

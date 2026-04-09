@@ -15,24 +15,31 @@ interface GlobeProps {
 const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const hotspotsRef = useRef<{ [key: string]: THREE.Mesh }>({});
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const globeGroupRef = useRef<THREE.Group>(new THREE.Group());
+  const hotspotsRef = useRef<{ [key: string]: THREE.Mesh }>({});
   const controlsRef = useRef<OrbitControls | null>(null);
 
+  const radius = 5;
+
+  // Initialize scene
   useEffect(() => {
     if (!mountRef.current) return;
 
-    // Initialization
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 15;
+    cameraRef.current = camera;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     mountRef.current.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
-    // Orbit Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -42,10 +49,7 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     controls.enablePan = false; 
     controlsRef.current = controls;
 
-    // Texture Loader
     const textureLoader = new THREE.TextureLoader();
-    
-    // High-quality Earth textures
     const earthTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
     const earthNormalMap = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg');
     const earthSpecularMap = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
@@ -53,11 +57,8 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     const globeGroup = globeGroupRef.current;
     scene.add(globeGroup);
 
-    // Globe
-    const radius = 5;
     const segments = 64;
     const globeGeometry = new THREE.SphereGeometry(radius, segments, segments);
-    
     const globeMaterial = new THREE.MeshPhongMaterial({
       map: earthTexture,
       normalMap: earthNormalMap,
@@ -65,11 +66,10 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
       specular: new THREE.Color(0x333333),
       shininess: 5,
     });
-    
     const globe = new THREE.Mesh(globeGeometry, globeMaterial);
     globeGroup.add(globe);
 
-    // Clouds layer
+    // Clouds
     const cloudGeometry = new THREE.SphereGeometry(radius + 0.05, segments, segments);
     const cloudTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png');
     const cloudMaterial = new THREE.MeshPhongMaterial({
@@ -80,7 +80,7 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
     globeGroup.add(clouds);
 
-    // Atmospheric Glow
+    // Glow
     const glowGeometry = new THREE.SphereGeometry(radius * 1.15, segments, segments);
     const glowMaterial = new THREE.ShaderMaterial({
       transparent: true,
@@ -110,7 +110,6 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     const glow = new THREE.Mesh(glowGeometry, glowMaterial);
     scene.add(glow);
 
-    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
@@ -122,70 +121,20 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     backLight.position.set(-5, -3, -5);
     scene.add(backLight);
 
-    camera.position.z = 15;
-
-    // Hotspot logic
-    const createHotspot = (event: TerraEvent) => {
-      const phi = (90 - event.lat) * (Math.PI / 180);
-      const theta = (event.lon + 180) * (Math.PI / 180);
-
-      const x = -(radius * Math.sin(phi) * Math.cos(theta));
-      const z = radius * Math.sin(phi) * Math.sin(theta);
-      const y = radius * Math.cos(phi);
-
-      const hotspotGeo = new THREE.SphereGeometry(0.12, 16, 16);
-      let color = 0x47E1E5; // cyan/weather
-      if (event.category === 'news') color = 0x3679DC; // blue
-      if (event.category === 'social') color = 0x22c55e; // green
-      if (event.category === 'politics') color = 0xef4444; // red
-      if (event.category === 'trends') color = 0xec4899; // pink
-
-      const hotspotMat = new THREE.MeshPhongMaterial({
-        color: color,
-        emissive: color,
-        emissiveIntensity: 1.5,
-      });
-      const hotspot = new THREE.Mesh(hotspotGeo, hotspotMat);
-      hotspot.position.set(x, y, z);
-      hotspot.userData = { event };
-      
-      // Ring around hotspot
-      const ringGeo = new THREE.RingGeometry(0.15, 0.22, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.lookAt(new THREE.Vector3(0, 0, 0));
-      hotspot.add(ring);
-
-      globeGroup.add(hotspot);
-      hotspotsRef.current[event.id] = hotspot;
-    };
-
-    events.forEach(createHotspot);
-
-    // Raycaster for clicks
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let mouseDownTime = 0;
 
-    const onMouseDown = () => {
-      mouseDownTime = Date.now();
-    };
-
+    const onMouseDown = () => { mouseDownTime = Date.now(); };
     const onMouseUp = (e: MouseEvent) => {
       if (Date.now() - mouseDownTime > 250) return;
-
       mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(globeGroup.children, true);
-
       for (const intersect of intersects) {
         let obj = intersect.object;
-        while (obj && !obj.userData.event && obj.parent) {
-          obj = obj.parent;
-        }
-
+        while (obj && !obj.userData.event && obj.parent) { obj = obj.parent; }
         if (obj && obj.userData.event) {
           onEventClick(obj.userData.event);
           break;
@@ -205,17 +154,13 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
 
     const animate = () => {
       requestAnimationFrame(animate);
-      
       controls.update();
       clouds.rotation.y += 0.0002;
-      clouds.rotation.x += 0.0001;
-
       const time = Date.now() * 0.003;
       Object.values(hotspotsRef.current).forEach((hotspot) => {
         const scale = 1 + Math.sin(time) * 0.15;
         hotspot.scale.set(scale, scale, scale);
       });
-
       renderer.render(scene, camera);
     };
     animate();
@@ -226,8 +171,54 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
       window.removeEventListener('mouseup', onMouseUp);
       mountRef.current?.removeChild(renderer.domElement);
     };
+  }, []);
+
+  // Update hotspots when events change
+  useEffect(() => {
+    const globeGroup = globeGroupRef.current;
+    
+    // Clear old hotspots
+    Object.values(hotspotsRef.current).forEach(h => globeGroup.remove(h));
+    hotspotsRef.current = {};
+
+    const createHotspot = (event: TerraEvent) => {
+      const phi = (90 - event.lat) * (Math.PI / 180);
+      const theta = (event.lon + 180) * (Math.PI / 180);
+
+      const x = -(radius * Math.sin(phi) * Math.cos(theta));
+      const z = radius * Math.sin(phi) * Math.sin(theta);
+      const y = radius * Math.cos(phi);
+
+      const hotspotGeo = new THREE.SphereGeometry(0.12, 16, 16);
+      let color = 0x47E1E5; 
+      if (event.category === 'news') color = 0x3679DC;
+      if (event.category === 'social') color = 0x22c55e;
+      if (event.category === 'politics') color = 0xef4444;
+      if (event.category === 'trends') color = 0xec4899;
+
+      const hotspotMat = new THREE.MeshPhongMaterial({
+        color: color,
+        emissive: color,
+        emissiveIntensity: 1.5,
+      });
+      const hotspot = new THREE.Mesh(hotspotGeo, hotspotMat);
+      hotspot.position.set(x, y, z);
+      hotspot.userData = { event };
+      
+      const ringGeo = new THREE.RingGeometry(0.15, 0.22, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.lookAt(new THREE.Vector3(0, 0, 0));
+      hotspot.add(ring);
+
+      globeGroup.add(hotspot);
+      hotspotsRef.current[event.id] = hotspot;
+    };
+
+    events.forEach(createHotspot);
   }, [events]);
 
+  // Update visual state of hovered/selected hotspot
   useEffect(() => {
     Object.entries(hotspotsRef.current).forEach(([id, mesh]) => {
       if (id === hoveredEventId) {
