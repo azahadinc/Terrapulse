@@ -3,6 +3,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TerraEvent } from '@/lib/events-data';
 
 interface GlobeProps {
@@ -16,6 +17,7 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
   const sceneRef = useRef<THREE.Scene | null>(null);
   const hotspotsRef = useRef<{ [key: string]: THREE.Mesh }>({});
   const globeGroupRef = useRef<THREE.Group>(new THREE.Group());
+  const controlsRef = useRef<OrbitControls | null>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -30,10 +32,20 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     renderer.setPixelRatio(window.devicePixelRatio);
     mountRef.current.appendChild(renderer.domElement);
 
+    // Orbit Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.5;
+    controls.minDistance = 7;
+    controls.maxDistance = 25;
+    controls.enablePan = false; // Keep globe centered
+    controlsRef.current = controls;
+
     // Texture Loader
     const textureLoader = new THREE.TextureLoader();
     
-    // High-quality Earth textures from Three.js examples
+    // High-quality Earth textures
     const earthTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
     const earthNormalMap = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg');
     const earthSpecularMap = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
@@ -151,23 +163,38 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     // Raycaster for clicks
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    let mouseDownTime = 0;
 
-    const onMouseClick = (e: MouseEvent) => {
+    const onMouseDown = () => {
+      mouseDownTime = Date.now();
+    };
+
+    const onMouseUp = (e: MouseEvent) => {
+      // Only trigger click if the mouse was pressed for a short time (prevent clicks during drags)
+      if (Date.now() - mouseDownTime > 250) return;
+
       mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(globeGroup.children);
+      const intersects = raycaster.intersectObjects(globeGroup.children, true);
 
       for (const intersect of intersects) {
-        if (intersect.object.userData.event) {
-          onEventClick(intersect.object.userData.event);
+        // Find the hotspot (it might be a child of the intersected object or the object itself)
+        let obj = intersect.object;
+        while (obj && !obj.userData.event && obj.parent) {
+          obj = obj.parent;
+        }
+
+        if (obj && obj.userData.event) {
+          onEventClick(obj.userData.event);
           break;
         }
       }
     };
 
-    window.addEventListener('click', onMouseClick);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
 
     // Resize handling
     const onResize = () => {
@@ -181,8 +208,7 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
     const animate = () => {
       requestAnimationFrame(animate);
       
-      // Rotate the whole globe group
-      globeGroup.rotation.y += 0.001;
+      controls.update();
       
       // Subtle cloud drift
       clouds.rotation.y += 0.0002;
@@ -201,12 +227,13 @@ const Globe: React.FC<GlobeProps> = ({ events, onEventClick, hoveredEventId }) =
 
     return () => {
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('click', onMouseClick);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp);
       mountRef.current?.removeChild(renderer.domElement);
     };
   }, [events]);
 
-  // Update hotspot visuals when hovered
+  // Update hotspot visuals when hovered/selected
   useEffect(() => {
     Object.entries(hotspotsRef.current).forEach(([id, mesh]) => {
       if (id === hoveredEventId) {
