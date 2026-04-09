@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -6,7 +5,7 @@ import { EventCategory } from '@/lib/events-data';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Globe as GlobeIcon, Cloud, Users, Newspaper, Filter, Landmark, TrendingUp } from 'lucide-react';
+import { Globe as GlobeIcon, Cloud, Users, Newspaper, Filter, Landmark, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface SidebarProps {
@@ -14,13 +13,17 @@ interface SidebarProps {
   onToggleCategory: (category: EventCategory) => void;
   timelineValue: number;
   onTimelineChange: (value: number) => void;
+  onAiSync: () => void;
+  isGenerating: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   activeCategories, 
   onToggleCategory, 
   timelineValue, 
-  onTimelineChange 
+  onTimelineChange,
+  onAiSync,
+  isGenerating
 }) => {
   const categories: { id: EventCategory; label: string; icon: React.ReactNode; color: string }[] = [
     { id: 'news', label: 'News', icon: <Newspaper className="w-4 h-4" />, color: 'bg-[#3679DC]' },
@@ -33,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const currentDate = new Date(2024, 2, 18 + timelineValue);
 
   return (
-    <div className="fixed left-6 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-6 w-72">
+    <div className="fixed left-6 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-4 w-72">
       {/* Branding */}
       <div className="glass-panel p-6 rounded-2xl">
         <div className="flex items-center gap-3 mb-2">
@@ -43,6 +46,22 @@ const Sidebar: React.FC<SidebarProps> = ({
           <h1 className="text-2xl font-bold tracking-tight text-white font-headline">TerraPulse</h1>
         </div>
         <p className="text-sm text-muted-foreground">Global real-time trend & event visualizer</p>
+      </div>
+
+      {/* AI Control */}
+      <div className="glass-panel p-4 rounded-2xl border-accent/20 bg-accent/5">
+        <Button 
+          onClick={onAiSync} 
+          disabled={isGenerating}
+          className="w-full bg-accent hover:bg-accent/90 text-background font-bold h-12 rounded-xl group"
+        >
+          {isGenerating ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : (
+            <Sparkles className="w-4 h-4 mr-2 group-hover:animate-pulse" />
+          )}
+          {isGenerating ? "Syncing Global AI..." : "Sync Global AI Data"}
+        </Button>
       </div>
 
       {/* Filtering */}
