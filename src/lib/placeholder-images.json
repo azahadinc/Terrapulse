@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "news-event",
+      "description": "Global news broadcast",
+      "imageUrl": "https://picsum.photos/seed/terra-news/800/600",
+      "imageHint": "news broadcast"
+    },
+    {
+      "id": "weather-event",
+      "description": "Satellite weather view",
+      "imageUrl": "https://picsum.photos/seed/terra-weather/800/600",
+      "imageHint": "satellite weather"
+    },
+    {
+      "id": "social-event",
+      "description": "Social media data visualization",
+      "imageUrl": "https://picsum.photos/seed/terra-social/800/600",
+      "imageHint": "data networking"
+    }
+  ]
 }
