@@ -37,16 +37,23 @@ export default function Home() {
 
       {/* Top Navigation Overlay */}
       <div className="absolute top-8 left-0 right-0 z-10 px-8 flex justify-between items-center pointer-events-none">
-        <div className="flex gap-4 pointer-events-auto">
+        {/* Left Section */}
+        <div className="pointer-events-auto">
           <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 text-white/60 text-sm font-medium">
             <Activity className="w-4 h-4 text-accent animate-pulse" />
             <span>LIVE NETWORK FEED</span>
           </div>
-          <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 text-white/60 text-sm font-medium">
+        </div>
+
+        {/* Center Section (Absolute Centered) */}
+        <div className="absolute left-1/2 -translate-x-1/2 pointer-events-auto">
+          <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 text-white/60 text-sm font-medium border-accent/10">
             <Layers className="w-4 h-4 text-primary" />
             <span>GLOBAL TOPOGRAPHY ACTIVE</span>
           </div>
         </div>
+
+        {/* Right Section */}
         <div className="glass-panel px-6 py-3 rounded-full flex items-center gap-4 text-white pointer-events-auto border-accent/20">
           <Search className="w-4 h-4 text-muted-foreground" />
           <input 
